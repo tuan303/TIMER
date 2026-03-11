@@ -21,7 +21,8 @@ import {
   X,
   LogOut,
   LogIn,
-  Trash2
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -41,7 +42,8 @@ import {
   ref,
   uploadBytes,
   getDownloadURL,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 } from './firebase';
 
 // --- Components ---
@@ -199,7 +201,7 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="flex items-center justify-between px-6 md:px-20 py-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-lg shadow-black/10 backdrop-blur-sm">
             <img 
               src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
               alt="Logo" 
@@ -221,8 +223,8 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-2 mb-8"
           >
-            <div className="px-8 py-3">
-              <p className="text-primary text-4xl md:text-6xl font-black tracking-tight">{formatDate(time)}</p>
+            <div className="px-8 py-3 bg-black/20 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
+              <p className="text-white text-4xl md:text-6xl font-black tracking-tight drop-shadow-lg">{formatDate(time)}</p>
             </div>
             
             {nextTimer && (
@@ -246,7 +248,7 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
             className="relative"
           >
             <div className="relative flex flex-col items-center">
-              <h1 className="text-white tracking-tighter text-8xl md:text-[12rem] font-black leading-none tabular-nums drop-shadow-2xl">
+              <h1 className="text-white tracking-tighter text-8xl md:text-[12rem] font-black leading-none tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 {formatTime(time)}
               </h1>
             </div>
@@ -275,6 +277,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   const [timers, setTimers] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [timerToDelete, setTimerToDelete] = useState<string | null>(null);
+  const [editingTimerId, setEditingTimerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isPinVerified) return;
@@ -335,6 +338,18 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     setPin('');
   };
 
+  const handleEdit = (timer: any) => {
+    setEditingTimerId(timer.id);
+    setDate(timer.date);
+    const [h, m] = timer.time.split(':');
+    setHours(h);
+    setMinutes(m);
+    setRingtoneName(timer.ringtoneName);
+    setRingtoneUrl(timer.ringtoneUrl);
+    setRepeatCount(timer.repeatCount?.toString() || '1');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSave = async () => {
     setFeedback(null);
     if (!date) {
@@ -348,18 +363,29 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
     setIsSaving(true);
     try {
-      // Save metadata to Firestore
-      await addDoc(collection(db, 'timers'), {
-        date,
-        time: `${hours}:${minutes}`,
-        ringtoneName: ringtoneName.trim(),
-        ringtoneUrl: ringtoneUrl.trim(),
-        repeatCount: parseInt(repeatCount, 10) || 1,
-        createdBy: 'admin_pin',
-        createdAt: serverTimestamp()
-      });
+      if (editingTimerId) {
+        await updateDoc(doc(db, 'timers', editingTimerId), {
+          date,
+          time: `${hours}:${minutes}`,
+          ringtoneName: ringtoneName.trim(),
+          ringtoneUrl: ringtoneUrl.trim(),
+          repeatCount: parseInt(repeatCount, 10) || 1,
+        });
+        setFeedback({ message: 'Timer updated successfully!', type: 'success' });
+        setEditingTimerId(null);
+      } else {
+        await addDoc(collection(db, 'timers'), {
+          date,
+          time: `${hours}:${minutes}`,
+          ringtoneName: ringtoneName.trim(),
+          ringtoneUrl: ringtoneUrl.trim(),
+          repeatCount: parseInt(repeatCount, 10) || 1,
+          createdBy: 'admin_pin',
+          createdAt: serverTimestamp()
+        });
+        setFeedback({ message: 'Timer saved successfully!', type: 'success' });
+      }
 
-      setFeedback({ message: 'Timer saved successfully!', type: 'success' });
       setRingtoneUrl('');
       setRingtoneName('');
       setRepeatCount('1');
@@ -477,7 +503,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-y-auto">
           <header className="h-16 border-b border-primary/10 bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
-            <h2 className="text-xl font-bold">Create New Timer</h2>
+            <h2 className="text-xl font-bold">{editingTimerId ? 'Edit Timer' : 'Create New Timer'}</h2>
             <div className="flex items-center gap-4">
               <button 
                 onClick={onBackClick}
@@ -593,8 +619,23 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                 className="w-full py-4 bg-primary text-background-dark rounded-xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSaving && <div className="size-4 border-2 border-background-dark border-t-transparent animate-spin rounded-full"></div>}
-                {isSaving ? 'Saving...' : 'Save Timer'}
+                {isSaving ? 'Saving...' : (editingTimerId ? 'Update Timer' : 'Save Timer')}
               </button>
+              
+              {editingTimerId && (
+                <button 
+                  onClick={() => {
+                    setEditingTimerId(null);
+                    setRingtoneUrl('');
+                    setRingtoneName('');
+                    setRepeatCount('1');
+                  }}
+                  disabled={isSaving}
+                  className="w-full mt-3 py-4 bg-slate-800 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Cancel Edit
+                </button>
+              )}
             </motion.div>
 
             {/* Timers List */}
@@ -642,13 +683,22 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                           </button>
                         </div>
                       ) : (
-                        <button 
-                          onClick={() => handleDelete(timer.id)}
-                          className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete Timer"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => handleEdit(timer)}
+                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Edit Timer"
+                          >
+                            <Edit2 className="size-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(timer.id)}
+                            className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Delete Timer"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   ))}

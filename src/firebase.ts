@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, doc, getDoc, getDocFromServer, Timestamp, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, doc, getDoc, getDocFromServer, Timestamp, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
@@ -36,6 +36,7 @@ export {
   ref,
   uploadBytes,
   getDownloadURL,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 };
 export type { User };
