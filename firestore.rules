@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string
+    //   - role: string (required, 'admin' or 'user')
+    //
+    // Collection: timers
+    // Fields:
+    //   - date: string (required, YYYY-MM-DD)
+    //   - time: string (required, HH:mm)
+    //   - ringtoneName: string (required)
+    //   - ringtoneUrl: string
+    //   - createdBy: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         ((request.auth.token.email == "tuan303@gmail.com" || request.auth.token.email == "admin@nshm.global") && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidTimer(data) {
+      return data.keys().hasAll(['date', 'time', 'ringtoneName', 'createdBy', 'createdAt']) &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.time is string && data.time.matches("^\\d{2}:\\d{2}$") &&
+             data.ringtoneName is string && data.ringtoneName.size() < 255 &&
+             (!('repeatCount' in data) || (data.repeatCount is number && data.repeatCount > 0 && data.repeatCount <= 100)) &&
+             data.createdBy == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /timers/{timerId} {
+      allow read: if true;
+      allow create: if true;
+      allow delete: if true;
+      allow update: if false;
+    }
+  }
+}
