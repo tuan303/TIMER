@@ -201,7 +201,7 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="flex items-start justify-between px-6 md:px-20 py-6">
-          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-lg shadow-black/10 backdrop-blur-sm w-fit">
+          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-[10px] shadow-lg shadow-black/10 backdrop-blur-sm w-fit">
             <img 
               src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
               alt="Logo" 
@@ -244,10 +244,10 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
             className="relative"
           >
             <div className="relative flex flex-col items-center justify-center">
-              <h1 className="text-white tracking-tighter text-8xl md:text-[12rem] font-black leading-none tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+              <h1 className="text-white tracking-wide text-8xl md:text-[12rem] font-black leading-none tabular-nums drop-shadow-[1px_1px_1px_rgba(0,0,0,1)]">
                 {formatTime(time)}
               </h1>
-              <p className="text-[#d21235] text-3xl md:text-5xl font-black tracking-[0.1em] uppercase mt-4 md:mt-8 text-center">
+              <p className="text-white text-3xl md:text-5xl font-black tracking-[0.1em] uppercase mt-4 md:mt-8 text-center drop-shadow-[1px_1px_1px_rgba(0,0,0,1)]">
                 {formatDate(time)}
               </p>
             </div>
