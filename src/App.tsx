@@ -196,12 +196,12 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
   return (
     <div 
       className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat relative" 
-      style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nshm_nen1.jpg")' }}
+      style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nen.jpg")' }}
     >
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
       <div className="relative z-10 flex flex-col min-h-screen">
-        <header className="flex items-center justify-between px-6 md:px-20 py-6">
-          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-lg shadow-black/10 backdrop-blur-sm">
+        <header className="flex items-start justify-between px-6 md:px-20 py-6">
+          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-2xl md:rounded-3xl shadow-lg shadow-black/10 backdrop-blur-sm w-fit">
             <img 
               src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
               alt="Logo" 
@@ -223,10 +223,6 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-2 mb-8"
           >
-            <div className="px-8 py-3 bg-black/20 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
-              <p className="text-white text-4xl md:text-6xl font-black tracking-tight drop-shadow-lg">{formatDate(time)}</p>
-            </div>
-            
             {nextTimer && (
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -247,10 +243,13 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
             transition={{ delay: 0.2 }}
             className="relative"
           >
-            <div className="relative flex flex-col items-center">
+            <div className="relative flex flex-col items-center justify-center">
               <h1 className="text-white tracking-tighter text-8xl md:text-[12rem] font-black leading-none tabular-nums drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 {formatTime(time)}
               </h1>
+              <p className="text-[#d21235] text-3xl md:text-5xl font-black tracking-[0.1em] uppercase mt-4 md:mt-8 text-center">
+                {formatDate(time)}
+              </p>
             </div>
           </motion.div>
         </main>
@@ -458,7 +457,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   return (
     <div 
       className="flex h-screen text-slate-100 overflow-hidden bg-cover bg-center bg-no-repeat relative"
-      style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nshm_nen1.jpg")' }}
+      style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nen.jpg")' }}
     >
       <div className="absolute inset-0 bg-background-dark/90 backdrop-blur-sm"></div>
       <div className="relative z-10 flex w-full h-full">
