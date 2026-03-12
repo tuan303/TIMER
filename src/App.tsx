@@ -265,7 +265,7 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
         </main>
 
         <footer className="p-10 text-center">
-          <p className="text-slate-600 text-[10px] tracking-[0.3em] uppercase">© 2026 NSHM Global Network</p>
+          <p className="text-[#adddff] text-[12px] tracking-[0.3em] font-bold drop-shadow-[1px_1px_1px_rgba(0,0,0,1)]">© Design by TuanTM</p>
         </footer>
       </div>
     </div>
