@@ -409,44 +409,46 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     }
   };
 
+  const [showSupport, setShowSupport] = useState(false);
+
   if (!isPinVerified) {
     return (
       <div 
-        className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center text-white p-4"
+        className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center text-slate-800 p-4"
         style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nshm_nen1.jpg")' }}
       >
-        <div className="absolute inset-0 bg-background-dark/90 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-xl"></div>
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 bg-primary/5 border border-primary/10 rounded-2xl p-12 text-center backdrop-blur-md max-w-md w-full"
+          className="relative z-10 bg-white/70 border border-white/40 rounded-3xl p-10 text-center backdrop-blur-2xl max-w-md w-full shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
         >
           <img 
             src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
             alt="Logo" 
-            className="h-16 mx-auto mb-8 object-contain" 
+            className="h-16 mx-auto mb-6 object-contain" 
             referrerPolicy="no-referrer"
           />
-          <h2 className="text-2xl font-bold mb-2">Admin Access</h2>
-          <p className="text-slate-400 mb-8">Please enter PIN code to access the control panel.</p>
+          <h2 className="text-2xl font-semibold mb-2 text-slate-900">Admin Access</h2>
+          <p className="text-slate-500 mb-8 text-sm">Please enter PIN code to access the control panel.</p>
           
           <form onSubmit={handlePinSubmit} className="space-y-4 text-left">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-primary/70 text-center block">Enter 4-digit PIN</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center block">Enter 4-digit PIN</label>
               <input 
                 type="password"
                 maxLength={4}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="••••"
-                className="w-full bg-background-dark border border-primary/10 rounded-xl py-4 px-4 text-2xl text-center tracking-[1em] focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                className="w-full bg-white/50 border border-slate-200/50 rounded-2xl py-4 px-4 text-2xl text-center tracking-[1em] focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-inner transition-all"
                 required
               />
             </div>
-            {pinError && <p className="text-red-500 text-xs font-bold text-center">{pinError}</p>}
+            {pinError && <p className="text-red-500 text-xs font-medium text-center">{pinError}</p>}
             <button 
               type="submit"
-              className="w-full py-4 bg-primary text-background-dark rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary/90 transition-all mt-4"
+              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all mt-6 shadow-md shadow-blue-600/20"
             >
               <LogIn className="size-5" />
               Access Admin
@@ -455,7 +457,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
           <button 
             onClick={onBackClick}
-            className="mt-6 text-slate-500 hover:text-white transition-colors text-sm font-bold"
+            className="mt-6 text-slate-400 hover:text-slate-600 transition-colors text-sm font-medium"
           >
             Back to Clock
           </button>
@@ -466,13 +468,13 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
   return (
     <div 
-      className="flex h-screen text-slate-100 overflow-hidden bg-cover bg-center bg-no-repeat relative"
+      className="flex h-screen text-slate-800 overflow-hidden bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nen.jpg")' }}
     >
-      <div className="absolute inset-0 bg-background-dark/90 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-slate-50/90 backdrop-blur-xl"></div>
       <div className="relative z-10 flex w-full h-full">
         {/* Sidebar */}
-        <aside className="w-64 border-r border-primary/10 flex flex-col bg-background-dark/40 backdrop-blur-xl">
+        <aside className="w-64 border-r border-slate-200/50 flex flex-col bg-white/60 backdrop-blur-2xl shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
           <div className="p-6 flex flex-col gap-1">
               <div className="flex items-center gap-3 mb-8">
                 <img 
@@ -482,27 +484,52 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                   referrerPolicy="no-referrer"
                 />
                 <div>
-                  <h1 className="text-lg font-bold leading-none">Admin</h1>
-                  <p className="text-[10px] text-primary/60 font-bold uppercase tracking-wider mt-1">Control Panel</p>
+                  <h1 className="text-lg font-semibold leading-none text-slate-900">Admin</h1>
+                  <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-1">Control Panel</p>
                 </div>
               </div>
             
-            <nav className="flex flex-col gap-1">
+            <nav className="flex flex-col gap-2 relative">
               <NavItem icon={<Plus className="size-4" />} label="Create Timer" active />
-              <NavItem icon={<HelpCircle className="size-4" />} label="Support" />
+              <div className="relative">
+                <button 
+                  onClick={() => setShowSupport(!showSupport)}
+                  className="w-full text-left"
+                >
+                  <NavItem icon={<HelpCircle className="size-4" />} label="Support" />
+                </button>
+                
+                <AnimatePresence>
+                  {showSupport && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      className="absolute left-full top-0 ml-4 w-64 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)] z-50"
+                    >
+                      <div className="absolute -left-2 top-4 w-4 h-4 bg-white border-l border-b border-slate-200/80 transform rotate-45"></div>
+                      <div className="relative z-10 space-y-2 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-900">Liên hệ Mr Tuấn</p>
+                        <p>SĐT: 0987804666</p>
+                        <p>Email: tuan303@gmail.com</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </nav>
           </div>
 
-          <div className="mt-auto p-4 border-t border-primary/5">
-            <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-primary/5 transition-colors group">
-              <div className="size-10 rounded-full overflow-hidden border border-primary/20 bg-primary/10 flex items-center justify-center">
-                <Users className="size-5 text-primary" />
+          <div className="mt-auto p-4 border-t border-slate-200/50">
+            <div className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/80 transition-colors group cursor-pointer shadow-sm border border-transparent hover:border-slate-200/50">
+              <div className="size-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center text-blue-600">
+                <Users className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">Administrator</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">PIN Access</p>
+                <p className="text-sm font-semibold truncate text-slate-900">Administrator</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">PIN Access</p>
               </div>
-              <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-500 transition-colors">
+              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
                 <LogOut className="size-4" />
               </button>
             </div>
@@ -511,12 +538,12 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-y-auto">
-          <header className="h-16 border-b border-primary/10 bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
-            <h2 className="text-xl font-bold">{editingTimerId ? 'Edit Timer' : 'Create New Timer'}</h2>
+          <header className="h-16 border-b border-slate-200/50 bg-white/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <h2 className="text-xl font-semibold text-slate-900">{editingTimerId ? 'Edit Timer' : 'Cài Đặt Chuông Báo Giờ'}</h2>
             <div className="flex items-center gap-4">
               <button 
                 onClick={onBackClick}
-                className="text-slate-400 hover:text-white transition-colors text-sm font-bold"
+                className="text-slate-500 hover:text-slate-800 transition-colors text-sm font-medium bg-white/50 px-4 py-2 rounded-full border border-slate-200/50 shadow-sm"
               >
                 Back to Clock
               </button>
@@ -527,29 +554,29 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-primary/5 border border-primary/10 rounded-2xl p-8 space-y-8 backdrop-blur-md"
+              className="bg-white/70 border border-slate-200/50 rounded-3xl p-8 space-y-8 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
             >
               {/* Date Selection */}
               <div className="space-y-3">
-                <label className="block text-xs font-black uppercase tracking-widest text-primary/70">Select Date</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">Select Date</label>
                 <input 
                   type="date" 
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary/30 outline-none text-white [color-scheme:dark]"
+                  className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                 />
               </div>
 
               {/* Time Selection (24h) */}
               <div className="space-y-3">
-                <label className="block text-xs font-black uppercase tracking-widest text-primary/70">Select Time (24h Format)</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">Select Time (24h Format)</label>
                 <div className="flex gap-4">
                   <div className="flex-1 space-y-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Hours</span>
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase ml-1">Hours</span>
                     <select 
                       value={hours}
                       onChange={(e) => setHours(e.target.value)}
-                      className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm appearance-none focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                      className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm appearance-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                     >
                       {Array.from({ length: 24 }).map((_, i) => (
                         <option key={i} value={i.toString().padStart(2, '0')}>
@@ -559,11 +586,11 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     </select>
                   </div>
                   <div className="flex-1 space-y-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Minutes</span>
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase ml-1">Minutes</span>
                     <select 
                       value={minutes}
                       onChange={(e) => setMinutes(e.target.value)}
-                      className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm appearance-none focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                      className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm appearance-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                     >
                       {Array.from({ length: 60 }).map((_, i) => (
                         <option key={i} value={i.toString().padStart(2, '0')}>
@@ -577,7 +604,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
               {/* Ringtone Input */}
               <div className="space-y-4">
-                <label className="block text-xs font-black uppercase tracking-widest text-primary/70">Ringtone Details</label>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">Ringtone Details</label>
                 
                 <div className="space-y-3">
                   <input 
@@ -585,7 +612,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     value={ringtoneName}
                     onChange={(e) => setRingtoneName(e.target.value)}
                     placeholder="Ringtone Name (e.g., Morning Bell)"
-                    className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                    className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                   />
                   
                   <input 
@@ -593,11 +620,11 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     value={ringtoneUrl}
                     onChange={(e) => setRingtoneUrl(e.target.value)}
                     placeholder="Ringtone URL (e.g., https://example.com/audio.mp3)"
-                    className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                    className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                   />
                   
                   <div className="space-y-2 pt-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Repeat Count</span>
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase ml-1">Repeat Count</span>
                     <input 
                       type="number" 
                       min="1"
@@ -605,7 +632,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                       value={repeatCount}
                       onChange={(e) => setRepeatCount(e.target.value)}
                       placeholder="Number of times to repeat"
-                      className="w-full bg-background-dark border border-primary/10 rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary/30 outline-none text-white"
+                      className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                     />
                   </div>
                 </div>
@@ -615,7 +642,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-4 rounded-xl text-sm font-bold flex items-center gap-3 ${feedback.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}
+                  className={`p-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${feedback.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}
                 >
                   {feedback.type === 'error' ? <X className="size-5" /> : <CheckCircle className="size-5" />}
                   {feedback.message}
@@ -625,9 +652,9 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full py-4 bg-primary text-background-dark rounded-xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isSaving && <div className="size-4 border-2 border-background-dark border-t-transparent animate-spin rounded-full"></div>}
+                {isSaving && <div className="size-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>}
                 {isSaving ? 'Saving...' : (editingTimerId ? 'Update Timer' : 'Save Timer')}
               </button>
               
@@ -640,7 +667,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     setRepeatCount('1');
                   }}
                   disabled={isSaving}
-                  className="w-full mt-3 py-4 bg-slate-800 text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full mt-3 py-4 bg-slate-100 text-slate-700 rounded-2xl text-sm font-semibold hover:bg-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   Cancel Edit
                 </button>
@@ -652,10 +679,10 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="mt-8 bg-primary/5 border border-primary/10 rounded-2xl p-8 backdrop-blur-md"
+              className="mt-8 bg-white/70 border border-slate-200/50 rounded-3xl p-8 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
             >
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <Bell className="size-5 text-primary" />
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-slate-900">
+                <Bell className="size-5 text-blue-600" />
                 Active Timers
               </h3>
               
@@ -666,27 +693,27 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
               ) : (
                 <div className="space-y-3">
                   {timers.map((timer) => (
-                    <div key={timer.id} className="flex items-center justify-between p-4 rounded-xl bg-background-dark/50 border border-primary/5 hover:border-primary/20 transition-colors">
+                    <div key={timer.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-slate-200/80 hover:border-blue-300 transition-colors shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-mono font-bold text-lg">
+                        <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-mono font-semibold text-lg border border-blue-100">
                           {timer.time}
                         </div>
                         <div>
-                          <p className="font-bold text-sm">{timer.ringtoneName}</p>
-                          <p className="text-xs text-slate-400">{timer.date}</p>
+                          <p className="font-semibold text-sm text-slate-900">{timer.ringtoneName}</p>
+                          <p className="text-xs text-slate-500">{timer.date}</p>
                         </div>
                       </div>
                       {timerToDelete === timer.id ? (
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={confirmDelete}
-                            className="px-3 py-1.5 bg-red-500/20 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/30 transition-colors"
+                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors border border-red-100"
                           >
                             Confirm
                           </button>
                           <button 
                             onClick={() => setTimerToDelete(null)}
-                            className="px-3 py-1.5 bg-slate-700/50 text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
+                            className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors border border-slate-200"
                           >
                             Cancel
                           </button>
@@ -695,14 +722,14 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                         <div className="flex items-center gap-1">
                           <button 
                             onClick={() => handleEdit(timer)}
-                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                             title="Edit Timer"
                           >
                             <Edit2 className="size-4" />
                           </button>
                           <button 
                             onClick={() => handleDelete(timer.id)}
-                            className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                             title="Delete Timer"
                           >
                             <Trash2 className="size-4" />
@@ -724,10 +751,10 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 // --- Helper Components ---
 
 const NavItem = ({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) => (
-  <a className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' : 'text-slate-400 hover:bg-primary/5 hover:text-slate-200'}`} href="#">
+  <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-medium ${active ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
     {icon}
-    <span className="text-sm font-bold">{label}</span>
-  </a>
+    <span className="text-sm">{label}</span>
+  </div>
 );
 
 export default function App() {
