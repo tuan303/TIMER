@@ -280,7 +280,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   const [hours, setHours] = useState('00');
   const [minutes, setMinutes] = useState('00');
   const [ringtoneUrl, setRingtoneUrl] = useState('https://hoangmaistarschool.edu.vn/ta/School.mp3');
-  const [ringtoneName, setRingtoneName] = useState('Chuông School');
+  const [ringtoneName, setRingtoneName] = useState('');
   const [ringtoneOption, setRingtoneOption] = useState<'school' | 'chuongsb' | 'custom'>('school');
   const [repeatCount, setRepeatCount] = useState('1');
   const [isSaving, setIsSaving] = useState(false);
@@ -352,13 +352,10 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     setRingtoneOption(option);
     if (option === 'school') {
       setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
-      setRingtoneName('Chuông School');
     } else if (option === 'chuongsb') {
       setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/chuongsb.mp3');
-      setRingtoneName('Chuông SB');
     } else {
       setRingtoneUrl('');
-      setRingtoneName('');
     }
   };
 
@@ -420,7 +417,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
       setRingtoneOption('school');
       setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
-      setRingtoneName('Chuông School');
+      setRingtoneName('');
       setRepeatCount('1');
       
       // Auto-hide success message after 3 seconds
@@ -648,7 +645,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                         onChange={() => handleOptionChange('school')}
                         className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-slate-700 font-medium">Chuông School (https://hoangmaistarschool.edu.vn/ta/School.mp3)</span>
+                      <span className="text-sm text-slate-700 font-medium">Chuông School</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input 
@@ -658,7 +655,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                         onChange={() => handleOptionChange('chuongsb')}
                         className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-slate-700 font-medium">Chuông SB (https://hoangmaistarschool.edu.vn/ta/chuongsb.mp3)</span>
+                      <span className="text-sm text-slate-700 font-medium">Chuông SB</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input 
@@ -732,7 +729,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     setEditingTimerId(null);
                     setRingtoneOption('school');
                     setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
-                    setRingtoneName('Chuông School');
+                    setRingtoneName('');
                     setRepeatCount('1');
                   }}
                   disabled={isSaving}
