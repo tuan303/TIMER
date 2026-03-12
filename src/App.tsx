@@ -122,6 +122,16 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
     return () => unsubscribe();
   }, []);
 
+  // Preload audio files to cache them for offline use
+  useEffect(() => {
+    timers.forEach(timer => {
+      if (timer.ringtoneUrl) {
+        // Fetch the audio file and cache it (Service Worker will intercept and cache it)
+        fetch(timer.ringtoneUrl, { mode: 'no-cors' }).catch(e => console.error("Failed to preload audio:", e));
+      }
+    });
+  }, [timers]);
+
   // Clock and Alarm Logic
   useEffect(() => {
     const timer = setInterval(() => {
