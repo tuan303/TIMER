@@ -279,8 +279,9 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [hours, setHours] = useState('00');
   const [minutes, setMinutes] = useState('00');
-  const [ringtoneUrl, setRingtoneUrl] = useState('');
-  const [ringtoneName, setRingtoneName] = useState('');
+  const [ringtoneUrl, setRingtoneUrl] = useState('https://hoangmaistarschool.edu.vn/ta/School.mp3');
+  const [ringtoneName, setRingtoneName] = useState('Chuông School');
+  const [ringtoneOption, setRingtoneOption] = useState<'school' | 'chuongsb' | 'custom'>('school');
   const [repeatCount, setRepeatCount] = useState('1');
   const [isSaving, setIsSaving] = useState(false);
   const [timers, setTimers] = useState<any[]>([]);
@@ -347,6 +348,20 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     setPin('');
   };
 
+  const handleOptionChange = (option: 'school' | 'chuongsb' | 'custom') => {
+    setRingtoneOption(option);
+    if (option === 'school') {
+      setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
+      setRingtoneName('Chuông School');
+    } else if (option === 'chuongsb') {
+      setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/chuongsb.mp3');
+      setRingtoneName('Chuông SB');
+    } else {
+      setRingtoneUrl('');
+      setRingtoneName('');
+    }
+  };
+
   const handleEdit = (timer: any) => {
     setEditingTimerId(timer.id);
     setDate(timer.date);
@@ -356,6 +371,14 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     setRingtoneName(timer.ringtoneName);
     setRingtoneUrl(timer.ringtoneUrl);
     setRepeatCount(timer.repeatCount?.toString() || '1');
+    
+    if (timer.ringtoneUrl === 'https://hoangmaistarschool.edu.vn/ta/School.mp3') {
+      setRingtoneOption('school');
+    } else if (timer.ringtoneUrl === 'https://hoangmaistarschool.edu.vn/ta/chuongsb.mp3') {
+      setRingtoneOption('chuongsb');
+    } else {
+      setRingtoneOption('custom');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -395,8 +418,9 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
         setFeedback({ message: 'Timer saved successfully!', type: 'success' });
       }
 
-      setRingtoneUrl('');
-      setRingtoneName('');
+      setRingtoneOption('school');
+      setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
+      setRingtoneName('Chuông School');
       setRepeatCount('1');
       
       // Auto-hide success message after 3 seconds
@@ -614,14 +638,58 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     placeholder="Ringtone Name (e.g., Morning Bell)"
                     className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
                   />
-                  
-                  <input 
-                    type="url" 
-                    value={ringtoneUrl}
-                    onChange={(e) => setRingtoneUrl(e.target.value)}
-                    placeholder="Ringtone URL (e.g., https://example.com/audio.mp3)"
-                    className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
-                  />
+
+                  <div className="flex flex-col gap-3 mb-4 bg-white/50 border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="ringtoneOption" 
+                        checked={ringtoneOption === 'school'}
+                        onChange={() => handleOptionChange('school')}
+                        className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 font-medium">Chuông School (https://hoangmaistarschool.edu.vn/ta/School.mp3)</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="ringtoneOption" 
+                        checked={ringtoneOption === 'chuongsb'}
+                        onChange={() => handleOptionChange('chuongsb')}
+                        className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 font-medium">Chuông SB (https://hoangmaistarschool.edu.vn/ta/chuongsb.mp3)</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="ringtoneOption" 
+                        checked={ringtoneOption === 'custom'}
+                        onChange={() => handleOptionChange('custom')}
+                        className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 font-medium">Khác</span>
+                    </label>
+                  </div>
+
+                  <AnimatePresence>
+                    {ringtoneOption === 'custom' && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-3 overflow-hidden"
+                      >
+                        <input 
+                          type="url" 
+                          value={ringtoneUrl}
+                          onChange={(e) => setRingtoneUrl(e.target.value)}
+                          placeholder="Ringtone URL (e.g., https://example.com/audio.mp3)"
+                          className="w-full bg-white/50 border border-slate-200/80 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-sm transition-all"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   
                   <div className="space-y-2 pt-2">
                     <span className="text-[10px] text-slate-400 font-semibold uppercase ml-1">Repeat Count</span>
@@ -662,8 +730,9 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                 <button 
                   onClick={() => {
                     setEditingTimerId(null);
-                    setRingtoneUrl('');
-                    setRingtoneName('');
+                    setRingtoneOption('school');
+                    setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
+                    setRingtoneName('Chuông School');
                     setRepeatCount('1');
                   }}
                   disabled={isSaving}
