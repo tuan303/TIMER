@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useRef, Component } from 'react';
+import { useState, useEffect, useRef, useCallback, Component } from 'react';
 import { 
   Clock, 
   Globe, 
@@ -23,7 +23,8 @@ import {
   LogIn,
   Trash2,
   Edit2,
-  ArrowLeft
+  ArrowLeft,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -39,6 +40,8 @@ import {
   doc, 
   getDoc, 
   getDocFromServer, 
+  getDocs,
+  getDocsFromServer,
   Timestamp, 
   serverTimestamp,
   ref,
@@ -80,9 +83,12 @@ class ErrorBoundary extends Component<any, any> {
     try {
       // Attempt to terminate Firestore to clear internal state
       await terminate(db);
+      console.log("Firestore terminated successfully.");
     } catch (e) {
       console.error("Failed to terminate Firestore:", e);
     }
+    // Clear local storage as well
+    localStorage.clear();
     window.location.reload();
   };
 
@@ -122,24 +128,30 @@ const SessionSelectionView = ({ onSelect }: { onSelect: (session: string) => voi
 
   useEffect(() => {
     let isMounted = true;
-    const unsubscribe = onSnapshot(collection(db, 'sessions'), (snapshot) => {
-      if (!isMounted) return;
-      const names: Record<string, string> = {
-        "Ca 1": "Ca 1",
-        "Ca 2": "Ca 2",
-        "Ca 3": "Ca 3",
-        "Ca 4": "Ca 4"
-      };
-      snapshot.docs.forEach(doc => {
-        names[doc.id] = doc.data().name;
-      });
-      setSessionNames(names);
-    }, (error) => {
-      console.error("Session selection snapshot error:", error);
-    });
+    const fetchSessions = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'sessions'));
+        if (!isMounted) return;
+        const names: Record<string, string> = {
+          "Ca 1": "Ca 1",
+          "Ca 2": "Ca 2",
+          "Ca 3": "Ca 3",
+          "Ca 4": "Ca 4"
+        };
+        snapshot.docs.forEach(doc => {
+          names[doc.id] = doc.data().name;
+        });
+        setSessionNames(names);
+      } catch (error: any) {
+        console.error("Session selection fetch error:", error);
+      }
+    };
+
+    fetchSessions();
+    const interval = setInterval(fetchSessions, 30000); // Refresh every 30s
     return () => {
       isMounted = false;
-      unsubscribe();
+      clearInterval(interval);
     };
   }, []);
 
@@ -206,34 +218,34 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch session name
-  useEffect(() => {
-    let isMounted = true;
-    const unsubscribe = onSnapshot(doc(db, 'sessions', selectedSession), (doc) => {
-      if (!isMounted) return;
-      if (doc.exists()) {
-        setSessionName(doc.data().name);
+  const fetchSessionName = useCallback(async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'sessions', selectedSession));
+      if (docSnap.exists()) {
+        setSessionName(docSnap.data().name);
       } else {
         setSessionName(selectedSession);
       }
-    }, (error) => {
+    } catch (error: any) {
       console.error("ClockView session name error:", error);
-    });
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    }
   }, [selectedSession]);
 
-  // Real-time sync with Firestore
   useEffect(() => {
-    let isMounted = true;
-    const q = query(
-      collection(db, 'timers'), 
-      where('sessionId', '==', selectedSession),
-      orderBy('date', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!isMounted) return;
+    fetchSessionName();
+    const interval = setInterval(fetchSessionName, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, [fetchSessionName]);
+
+  // Sync with Firestore
+  const fetchTimers = useCallback(async () => {
+    try {
+      const q = query(
+        collection(db, 'timers'), 
+        where('sessionId', '==', selectedSession),
+        orderBy('date', 'asc')
+      );
+      const snapshot = await getDocs(q);
       const timersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -248,15 +260,16 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
       });
       
       setTimers(timersData);
-    }, (error) => {
-      console.error("Firestore error in ClockView:", error);
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    } catch (error: any) {
+      console.error("ClockView timers error:", error);
+    }
   }, [selectedSession]);
+
+  useEffect(() => {
+    fetchTimers();
+    const interval = setInterval(fetchTimers, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, [fetchTimers]);
 
   // Preload audio files to cache them for offline use
   useEffect(() => {
@@ -365,12 +378,24 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <button 
-              onClick={onAdminClick}
-              className="size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer text-white shadow-lg"
-            >
-              <Settings className="size-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  fetchSessionName();
+                  fetchTimers();
+                }}
+                className="size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer text-white shadow-lg"
+                title="Làm mới"
+              >
+                <RefreshCw className="size-5" />
+              </button>
+              <button 
+                onClick={onAdminClick}
+                className="size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer text-white shadow-lg"
+              >
+                <Settings className="size-5" />
+              </button>
+            </div>
             <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-lg">
               {sessionName}
             </div>
@@ -482,21 +507,20 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
   const [currentSessionName, setCurrentSessionName] = useState(selectedSession);
   const [isSavingSessionName, setIsSavingSessionName] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const unsubscribe = onSnapshot(doc(db, 'sessions', selectedSession), (doc) => {
-      if (!isMounted) return;
-      if (doc.exists()) {
-        setCurrentSessionName(doc.data().name);
+  const fetchSessionName = useCallback(async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'sessions', selectedSession));
+      if (docSnap.exists()) {
+        setCurrentSessionName(docSnap.data().name);
       }
-    }, (error) => {
-      console.error("Firestore error in AdminView session name:", error);
-    });
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    } catch (error: any) {
+      console.error("AdminView session name error:", error);
+    }
   }, [selectedSession]);
+
+  useEffect(() => {
+    fetchSessionName();
+  }, [fetchSessionName]);
 
   const handleSaveSessionName = async () => {
     if (!currentSessionName.trim() || isSaving || isSavingSessionName) return;
@@ -505,6 +529,7 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     try {
       await setDoc(doc(db, 'sessions', selectedSession), { name: currentSessionName.trim() }, { merge: true });
       setFeedback({ message: 'Tên ca thi đã được cập nhật!', type: 'success' });
+      await fetchSessionName(); // Refresh after save
       setTimeout(() => setFeedback(null), 3000);
     } catch (error: any) {
       setFeedback({ message: `Lỗi: ${error.message}`, type: 'error' });
@@ -513,16 +538,14 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    const q = query(
-      collection(db, 'timers'), 
-      where('sessionId', '==', selectedSession),
-      orderBy('date', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!isMounted) return;
+  const fetchTimers = useCallback(async () => {
+    try {
+      const q = query(
+        collection(db, 'timers'), 
+        where('sessionId', '==', selectedSession),
+        orderBy('date', 'asc')
+      );
+      const snapshot = await getDocs(q);
       const timersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -537,20 +560,15 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
       });
       
       setTimers(timersData);
-    }, (error) => {
-      console.error("Firestore error in AdminView timers:", error);
-      if (error.message.includes('Missing or insufficient permissions')) {
-        setFeedback({ message: "Bạn không có quyền truy cập dữ liệu này.", type: 'error' });
-      } else {
-        setFeedback({ message: "Lỗi tải danh sách chuông. Vui lòng thử lại.", type: 'error' });
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    } catch (error: any) {
+      console.error("AdminView timers error:", error);
+      setFeedback({ message: "Lỗi tải danh sách chuông.", type: 'error' });
+    }
   }, [selectedSession]);
+
+  useEffect(() => {
+    fetchTimers();
+  }, [fetchTimers]);
 
   const handleDelete = async (id: string) => {
     if (isSaving || isSavingSessionName) return;
@@ -562,6 +580,7 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     try {
       await deleteDoc(doc(db, 'timers', timerToDelete));
       setTimerToDelete(null);
+      await fetchTimers(); // Refresh after delete
     } catch (error: any) {
       console.error("Error deleting timer:", error);
       setFeedback({ message: `Failed to delete timer: ${error.message}`, type: 'error' });
@@ -643,6 +662,8 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
         });
         setFeedback({ message: 'Timer saved successfully!', type: 'success' });
       }
+
+      await fetchTimers(); // Refresh after save
 
       setRingtoneOption('school');
       setRingtoneUrl('https://hoangmaistarschool.edu.vn/ta/School.mp3');
@@ -839,6 +860,16 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
           <header className="h-16 border-b border-slate-200/50 bg-white/60 backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
             <h2 className="text-xl font-semibold text-slate-900">{editingTimerId ? 'Edit Timer' : 'Cài Đặt Chuông Báo Giờ'}</h2>
             <div className="flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  fetchSessionName();
+                  fetchTimers();
+                }}
+                className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                title="Tải lại dữ liệu"
+              >
+                <RefreshCw className={`size-4 ${isSaving || isSavingSessionName ? 'animate-spin' : ''}`} />
+              </button>
               <button 
                 onClick={onBackClick}
                 className="text-slate-600 hover:text-slate-900 transition-all text-sm font-bold bg-white/80 px-5 py-2.5 rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md"
