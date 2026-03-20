@@ -242,8 +242,7 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
     try {
       const q = query(
         collection(db, 'timers'), 
-        where('sessionId', '==', selectedSession),
-        orderBy('date', 'asc')
+        where('sessionId', '==', selectedSession)
       );
       const snapshot = await getDocs(q);
       const timersData = snapshot.docs.map(doc => ({
@@ -251,12 +250,12 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
         ...doc.data()
       })) as any[];
       
-      // Sort by time in memory to avoid requiring a composite index
+      // Sort by date and time in memory to avoid requiring a composite index
       timersData.sort((a, b) => {
         if (a.date === b.date) {
           return a.time.localeCompare(b.time);
         }
-        return 0;
+        return a.date.localeCompare(b.date);
       });
       
       setTimers(timersData);
@@ -546,8 +545,7 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     try {
       const q = query(
         collection(db, 'timers'), 
-        where('sessionId', '==', selectedSession),
-        orderBy('date', 'asc')
+        where('sessionId', '==', selectedSession)
       );
       const snapshot = await getDocs(q);
       const timersData = snapshot.docs.map(doc => ({
@@ -555,12 +553,12 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
         ...doc.data()
       })) as any[];
       
-      // Sort by time in memory to avoid requiring a composite index
+      // Sort by date and time in memory to avoid requiring a composite index
       timersData.sort((a, b) => {
         if (a.date === b.date) {
           return a.time.localeCompare(b.time);
         }
-        return 0;
+        return a.date.localeCompare(b.date);
       });
       
       setTimers(timersData);
