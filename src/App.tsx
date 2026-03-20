@@ -60,11 +60,60 @@ import {
   User
 } from './firebase';
 
-// --- Components ---
+// --- Utilities ---
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
 }
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// --- Components ---
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -73,10 +122,13 @@ interface ErrorBoundaryState {
 
 class ErrorBoundary extends Component<any, any> {
   state = { hasError: false, error: null };
-  props: any;
 
   static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   handleReset = async () => {
@@ -144,6 +196,11 @@ const SessionSelectionView = ({ onSelect }: { onSelect: (session: string) => voi
         setSessionNames(names);
       } catch (error: any) {
         console.error("Session selection fetch error:", error);
+        try {
+          handleFirestoreError(error, OperationType.GET, 'sessions');
+        } catch (e) {
+          // Error already logged
+        }
       }
     };
 
@@ -219,6 +276,7 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
 
   // Fetch session name
   const fetchSessionName = useCallback(async () => {
+    const path = `sessions/${selectedSession}`;
     try {
       const docSnap = await getDoc(doc(db, 'sessions', selectedSession));
       if (docSnap.exists()) {
@@ -228,6 +286,11 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
       }
     } catch (error: any) {
       console.error("ClockView session name error:", error);
+      try {
+        handleFirestoreError(error, OperationType.GET, path);
+      } catch (e) {
+        // Error already logged
+      }
     }
   }, [selectedSession]);
 
@@ -239,6 +302,7 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
 
   // Sync with Firestore
   const fetchTimers = useCallback(async () => {
+    const path = 'timers';
     try {
       const q = query(
         collection(db, 'timers'), 
@@ -261,6 +325,11 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
       setTimers(timersData);
     } catch (error: any) {
       console.error("ClockView timers error:", error);
+      try {
+        handleFirestoreError(error, OperationType.GET, path);
+      } catch (e) {
+        // Error already logged
+      }
     }
   }, [selectedSession]);
 
@@ -274,8 +343,14 @@ const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSes
   useEffect(() => {
     timers.forEach(timer => {
       if (timer.ringtoneUrl) {
-        // Fetch the audio file and cache it (Service Worker will intercept and cache it)
-        fetch(timer.ringtoneUrl, { mode: 'no-cors' }).catch(e => console.error("Failed to preload audio:", e));
+        // Use a standard fetch without any potential overrides
+        // Service Worker will intercept and cache it based on vite.config.ts patterns
+        try {
+          window.fetch(timer.ringtoneUrl, { mode: 'no-cors' })
+            .catch(e => console.warn("Audio preload warning (non-fatal):", e.message));
+        } catch (e: any) {
+          console.warn("Audio preload catch (non-fatal):", e.message);
+        }
       }
     });
   }, [timers]);
@@ -507,6 +582,7 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
   const [isSavingSessionName, setIsSavingSessionName] = useState(false);
 
   const fetchSessionName = useCallback(async () => {
+    const path = `sessions/${selectedSession}`;
     try {
       const docSnap = await getDoc(doc(db, 'sessions', selectedSession));
       if (docSnap.exists()) {
@@ -514,6 +590,11 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
       }
     } catch (error: any) {
       console.error("AdminView session name error:", error);
+      try {
+        handleFirestoreError(error, OperationType.GET, path);
+      } catch (e) {
+        // Error already logged
+      }
     }
   }, [selectedSession]);
 
@@ -525,23 +606,33 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     if (!currentSessionName.trim() || isSaving || isSavingSessionName) return;
     setIsSavingSessionName(true);
     setFeedback(null);
+    const path = `sessions/${selectedSession}`;
     try {
       await setDoc(doc(db, 'sessions', selectedSession), { name: currentSessionName.trim() }, { merge: true });
       setFeedback({ message: 'Tên ca thi đã được cập nhật!', type: 'success' });
       await fetchSessionName(); // Refresh after save
       setTimeout(() => setFeedback(null), 3000);
     } catch (error: any) {
+      console.error("Save session name error:", error);
       let errorMessage = `Lỗi: ${error.message}`;
       if (error.message.includes('Missing or insufficient permissions')) {
         errorMessage = 'Lỗi quyền truy cập: Bạn cần cập nhật Firestore Rules trong Firebase Console để cho phép ghi dữ liệu.';
       }
       setFeedback({ message: errorMessage, type: 'error' });
+      
+      // Log detailed error for debugging
+      try {
+        handleFirestoreError(error, OperationType.WRITE, path);
+      } catch (e) {
+        // Error already logged by handleFirestoreError
+      }
     } finally {
       setIsSavingSessionName(false);
     }
   };
 
   const fetchTimers = useCallback(async () => {
+    const path = 'timers';
     try {
       const q = query(
         collection(db, 'timers'), 
@@ -565,6 +656,11 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     } catch (error: any) {
       console.error("AdminView timers error:", error);
       setFeedback({ message: "Lỗi tải danh sách chuông.", type: 'error' });
+      try {
+        handleFirestoreError(error, OperationType.GET, path);
+      } catch (e) {
+        // Error already logged
+      }
     }
   }, [selectedSession]);
 
