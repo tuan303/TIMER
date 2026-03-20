@@ -532,7 +532,11 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
       await fetchSessionName(); // Refresh after save
       setTimeout(() => setFeedback(null), 3000);
     } catch (error: any) {
-      setFeedback({ message: `Lỗi: ${error.message}`, type: 'error' });
+      let errorMessage = `Lỗi: ${error.message}`;
+      if (error.message.includes('Missing or insufficient permissions')) {
+        errorMessage = 'Lỗi quyền truy cập: Bạn cần cập nhật Firestore Rules trong Firebase Console để cho phép ghi dữ liệu.';
+      }
+      setFeedback({ message: errorMessage, type: 'error' });
     } finally {
       setIsSavingSessionName(false);
     }
@@ -674,7 +678,11 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
       setTimeout(() => setFeedback(null), 3000);
     } catch (error: any) {
       console.error("Save failed:", error);
-      setFeedback({ message: `Failed to save timer: ${error.message}`, type: 'error' });
+      let errorMessage = `Failed to save timer: ${error.message}`;
+      if (error.message.includes('Missing or insufficient permissions')) {
+        errorMessage = 'Lỗi quyền truy cập: Bạn cần cập nhật Firestore Rules trong Firebase Console để cho phép ghi dữ liệu.';
+      }
+      setFeedback({ message: errorMessage, type: 'error' });
     } finally {
       setIsSaving(false);
     }
