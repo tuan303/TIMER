@@ -51,6 +51,7 @@ import {
   terminate,
   googleProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User
@@ -425,6 +426,9 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
   const [pin, setPin] = useState('');
   const [isPinVerified, setIsPinVerified] = useState(false);
   const [pinError, setPinError] = useState('');
+  const [email, setEmail] = useState('it@nshm.vn');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   
@@ -436,12 +440,20 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     return () => unsubscribe();
   }, []);
 
-  const handleGoogleLogin = async () => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error("Login failed:", error);
-      setFeedback({ message: `Login failed: ${error.message}`, type: 'error' });
+      let message = "Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản/mật khẩu.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = "Email hoặc mật khẩu không chính xác.";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Quá nhiều lần thử thất bại. Vui lòng thử lại sau.";
+      }
+      setAuthError(message);
     }
   };
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -701,14 +713,39 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
             </>
           ) : (
             <>
-              <p className="text-slate-500 mb-8 text-sm">Security requirement: Please sign in with Google to verify your admin identity.</p>
-              <button 
-                onClick={handleGoogleLogin}
-                className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition-all shadow-sm"
-              >
-                <Globe className="size-5 text-blue-500" />
-                Sign in with Google
-              </button>
+              <p className="text-slate-500 mb-6 text-sm">Vui lòng đăng nhập tài khoản quản trị để tiếp tục.</p>
+              <form onSubmit={handleEmailLogin} className="space-y-4 text-left">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block ml-1">Email</label>
+                  <input 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    className="w-full bg-white/50 border border-slate-200/50 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block ml-1">Mật khẩu</label>
+                  <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-white/50 border border-slate-200/50 rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 transition-all"
+                    required
+                  />
+                </div>
+                {authError && <p className="text-red-500 text-xs font-medium text-center">{authError}</p>}
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-blue-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-600 transition-all mt-4 shadow-lg shadow-blue-500/25"
+                >
+                  <LogIn className="size-5" />
+                  Đăng nhập
+                </button>
+              </form>
             </>
           )}
 
