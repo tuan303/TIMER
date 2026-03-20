@@ -441,7 +441,7 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
     e.preventDefault();
     setAuthError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password.trim());
     } catch (error: any) {
       console.error("Login failed:", error);
       let message = "Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản/mật khẩu.";
@@ -449,8 +449,22 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
         message = "Email hoặc mật khẩu không chính xác.";
       } else if (error.code === 'auth/too-many-requests') {
         message = "Quá nhiều lần thử thất bại. Vui lòng thử lại sau.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "Tính năng đăng nhập bằng Email/Mật khẩu chưa được bật trong Firebase Console.";
+      } else {
+        message = `Lỗi: ${error.message}`;
       }
       setAuthError(message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setAuthError('');
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Google login failed:", error);
+      setAuthError(`Lỗi đăng nhập Google: ${error.message}`);
     }
   };
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -700,6 +714,23 @@ const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, 
               Đăng nhập
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white/70 px-2 text-slate-400 backdrop-blur-sm">Hoặc</span>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleGoogleLogin}
+            className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="size-5" />
+            Đăng nhập bằng Google
+          </button>
 
           <button 
             onClick={onBackClick}
