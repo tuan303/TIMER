@@ -22,11 +22,13 @@ import {
   LogOut,
   LogIn,
   Trash2,
-  Edit2
+  Edit2,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   db, 
+  auth,
   storage, 
   collection, 
   addDoc, 
@@ -43,7 +45,15 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  where,
+  setDoc,
+  terminate,
+  googleProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  User
 } from './firebase';
 
 // --- Components ---
@@ -65,6 +75,16 @@ class ErrorBoundary extends Component<any, any> {
     return { hasError: true, error };
   }
 
+  handleReset = async () => {
+    try {
+      // Attempt to terminate Firestore to clear internal state
+      await terminate(db);
+    } catch (e) {
+      console.error("Failed to terminate Firestore:", e);
+    }
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -75,10 +95,10 @@ class ErrorBoundary extends Component<any, any> {
               {this.state.error?.message || "An unexpected error occurred."}
             </p>
             <button 
-              onClick={() => window.location.reload()}
+              onClick={this.handleReset}
               className="px-6 py-2 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors"
             >
-              Reload Page
+              Reset App
             </button>
           </div>
         </div>
@@ -90,17 +110,129 @@ class ErrorBoundary extends Component<any, any> {
 
 // --- Components ---
 
-const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
+const SessionSelectionView = ({ onSelect }: { onSelect: (session: string) => void }) => {
+  const sessionIds = ["Ca 1", "Ca 2", "Ca 3", "Ca 4"];
+  const [sessionNames, setSessionNames] = useState<Record<string, string>>({
+    "Ca 1": "Ca 1",
+    "Ca 2": "Ca 2",
+    "Ca 3": "Ca 3",
+    "Ca 4": "Ca 4"
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = onSnapshot(collection(db, 'sessions'), (snapshot) => {
+      if (!isMounted) return;
+      const names: Record<string, string> = {
+        "Ca 1": "Ca 1",
+        "Ca 2": "Ca 2",
+        "Ca 3": "Ca 3",
+        "Ca 4": "Ca 4"
+      };
+      snapshot.docs.forEach(doc => {
+        names[doc.id] = doc.data().name;
+      });
+      setSessionNames(names);
+    }, (error) => {
+      console.error("Session selection snapshot error:", error);
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  return (
+    <div 
+      className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat relative" 
+      style={{ backgroundImage: 'url("https://hoangmaistarschool.edu.vn/thongtin/nen.jpg")' }}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[4px]"></div>
+      
+      {/* Header with Logo moved to top-left */}
+      <header className="relative z-20 flex items-center justify-between px-6 md:px-20 py-6">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white/95 p-2 md:p-3 rounded-2xl shadow-lg backdrop-blur-md"
+        >
+          <img 
+            src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
+            alt="Logo" 
+            className="h-12 md:h-16 w-auto object-contain" 
+            referrerPolicy="no-referrer"
+          />
+        </motion.div>
+      </header>
+
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 -mt-20">
+        <h2 className="text-white text-4xl font-black uppercase tracking-[0.2em] mb-12 drop-shadow-lg">Chọn Ca Thi</h2>
+
+        <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8">
+          {sessionIds.map((sessionId, index) => (
+            <motion.button
+              key={sessionId}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.98)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelect(sessionId)}
+              className="h-40 bg-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 flex flex-col items-center justify-center gap-4 transition-all group backdrop-blur-xl px-6"
+            >
+              <div className="size-16 bg-blue-500 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                <Bell className="size-8" />
+              </div>
+              <span className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight text-center line-clamp-2">{sessionNames[sessionId]}</span>
+            </motion.button>
+          ))}
+        </div>
+
+        <footer className="mt-20 text-center">
+          <p className="text-white/60 text-xs tracking-[0.3em] font-bold uppercase">© Design by TuanTM</p>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+const ClockView = ({ selectedSession, onAdminClick, onBackClick }: { selectedSession: string, onAdminClick: () => void, onBackClick: () => void }) => {
   const [time, setTime] = useState(new Date());
   const [timers, setTimers] = useState<any[]>([]);
   const [nextTimer, setNextTimer] = useState<any>(null);
   const [playedTimers, setPlayedTimers] = useState<Set<string>>(new Set());
+  const [sessionName, setSessionName] = useState(selectedSession);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Fetch session name
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = onSnapshot(doc(db, 'sessions', selectedSession), (doc) => {
+      if (!isMounted) return;
+      if (doc.exists()) {
+        setSessionName(doc.data().name);
+      } else {
+        setSessionName(selectedSession);
+      }
+    }, (error) => {
+      console.error("ClockView session name error:", error);
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [selectedSession]);
 
   // Real-time sync with Firestore
   useEffect(() => {
-    const q = query(collection(db, 'timers'), orderBy('date', 'asc'));
+    let isMounted = true;
+    const q = query(
+      collection(db, 'timers'), 
+      where('sessionId', '==', selectedSession),
+      orderBy('date', 'asc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!isMounted) return;
       const timersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -119,8 +251,11 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
       console.error("Firestore error in ClockView:", error);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [selectedSession]);
 
   // Preload audio files to cache them for offline use
   useEffect(() => {
@@ -211,20 +346,34 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="flex items-start justify-between px-6 md:px-20 py-6">
-          <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-[10px] shadow-lg shadow-black/10 backdrop-blur-sm w-fit">
-            <img 
-              src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
-              alt="Logo" 
-              className="h-12 md:h-16 w-auto object-contain" 
-              referrerPolicy="no-referrer"
-            />
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={onBackClick}
+              className="size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer text-white shadow-lg"
+              title="Quay lại chọn ca thi"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+            <div className="flex items-center gap-3 bg-white/95 p-2 md:p-3 rounded-[10px] shadow-lg shadow-black/10 backdrop-blur-sm w-fit">
+              <img 
+                src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" 
+                alt="Logo" 
+                className="h-12 md:h-16 w-auto object-contain" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
           </div>
-          <button 
-            onClick={onAdminClick}
-            className="size-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer"
-          >
-            <Settings className="size-5 text-primary" />
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button 
+              onClick={onAdminClick}
+              className="size-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all cursor-pointer text-white shadow-lg"
+            >
+              <Settings className="size-5" />
+            </button>
+            <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-lg">
+              {sessionName}
+            </div>
+          </div>
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-4">
@@ -272,10 +421,29 @@ const ClockView = ({ onAdminClick }: { onAdminClick: () => void }) => {
   );
 };
 
-const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
+const AdminView = ({ selectedSession, onBackClick }: { selectedSession: string, onBackClick: () => void }) => {
   const [pin, setPin] = useState('');
   const [isPinVerified, setIsPinVerified] = useState(false);
   const [pinError, setPinError] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      setFeedback({ message: `Login failed: ${error.message}`, type: 'error' });
+    }
+  };
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [hours, setHours] = useState('00');
   const [minutes, setMinutes] = useState('00');
@@ -288,12 +456,52 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   const [feedback, setFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [timerToDelete, setTimerToDelete] = useState<string | null>(null);
   const [editingTimerId, setEditingTimerId] = useState<string | null>(null);
+  const [currentSessionName, setCurrentSessionName] = useState(selectedSession);
+  const [isSavingSessionName, setIsSavingSessionName] = useState(false);
 
   useEffect(() => {
     if (!isPinVerified) return;
+    let isMounted = true;
+    const unsubscribe = onSnapshot(doc(db, 'sessions', selectedSession), (doc) => {
+      if (!isMounted) return;
+      if (doc.exists()) {
+        setCurrentSessionName(doc.data().name);
+      }
+    }, (error) => {
+      console.error("Firestore error in AdminView session name:", error);
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [isPinVerified, selectedSession]);
+
+  const handleSaveSessionName = async () => {
+    if (!currentSessionName.trim() || isSaving || isSavingSessionName) return;
+    setIsSavingSessionName(true);
+    setFeedback(null);
+    try {
+      await setDoc(doc(db, 'sessions', selectedSession), { name: currentSessionName.trim() }, { merge: true });
+      setFeedback({ message: 'Tên ca thi đã được cập nhật!', type: 'success' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (error: any) {
+      setFeedback({ message: `Lỗi: ${error.message}`, type: 'error' });
+    } finally {
+      setIsSavingSessionName(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPinVerified) return;
+    let isMounted = true;
     
-    const q = query(collection(db, 'timers'), orderBy('date', 'asc'));
+    const q = query(
+      collection(db, 'timers'), 
+      where('sessionId', '==', selectedSession),
+      orderBy('date', 'asc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!isMounted) return;
       const timersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -309,19 +517,27 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
       
       setTimers(timersData);
     }, (error) => {
-      console.error("Firestore error in AdminView:", error);
-      setFeedback({ message: "Failed to load timers. Please check your connection.", type: 'error' });
+      console.error("Firestore error in AdminView timers:", error);
+      if (error.message.includes('Missing or insufficient permissions')) {
+        setFeedback({ message: "Bạn không có quyền truy cập dữ liệu này.", type: 'error' });
+      } else {
+        setFeedback({ message: "Lỗi tải danh sách chuông. Vui lòng thử lại.", type: 'error' });
+      }
     });
 
-    return () => unsubscribe();
-  }, [isPinVerified]);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [isPinVerified, selectedSession]);
 
   const handleDelete = async (id: string) => {
+    if (isSaving || isSavingSessionName) return;
     setTimerToDelete(id);
   };
 
   const confirmDelete = async () => {
-    if (!timerToDelete) return;
+    if (!timerToDelete || isSaving || isSavingSessionName) return;
     try {
       await deleteDoc(doc(db, 'timers', timerToDelete));
       setTimerToDelete(null);
@@ -343,7 +559,8 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(auth);
     setIsPinVerified(false);
     setPin('');
   };
@@ -360,6 +577,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   };
 
   const handleEdit = (timer: any) => {
+    if (isSaving || isSavingSessionName) return;
     setEditingTimerId(timer.id);
     setDate(timer.date);
     const [h, m] = timer.time.split(':');
@@ -380,6 +598,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
   };
 
   const handleSave = async () => {
+    if (isSaving || isSavingSessionName) return;
     setFeedback(null);
     if (!date) {
       setFeedback({ message: 'Please select a date', type: 'error' });
@@ -399,6 +618,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
           ringtoneName: ringtoneName.trim(),
           ringtoneUrl: ringtoneUrl.trim(),
           repeatCount: parseInt(repeatCount, 10) || 1,
+          sessionId: selectedSession,
         });
         setFeedback({ message: 'Timer updated successfully!', type: 'success' });
         setEditingTimerId(null);
@@ -409,7 +629,8 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
           ringtoneName: ringtoneName.trim(),
           ringtoneUrl: ringtoneUrl.trim(),
           repeatCount: parseInt(repeatCount, 10) || 1,
-          createdBy: 'admin_pin',
+          sessionId: selectedSession,
+          createdBy: user?.uid || 'admin_pin',
           createdAt: serverTimestamp()
         });
         setFeedback({ message: 'Timer saved successfully!', type: 'success' });
@@ -432,7 +653,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
   const [showSupport, setShowSupport] = useState(false);
 
-  if (!isPinVerified) {
+  if (!isPinVerified || (!user && !isAuthLoading)) {
     return (
       <div 
         className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center text-slate-800 p-4"
@@ -451,30 +672,45 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
             referrerPolicy="no-referrer"
           />
           <h2 className="text-2xl font-semibold mb-2 text-slate-900">Admin Access</h2>
-          <p className="text-slate-500 mb-8 text-sm">Please enter PIN code to access the control panel.</p>
           
-          <form onSubmit={handlePinSubmit} className="space-y-4 text-left">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center block">Enter 4-digit PIN</label>
-              <input 
-                type="password"
-                maxLength={4}
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="••••"
-                className="w-full bg-white/50 border border-slate-200/50 rounded-2xl py-4 px-4 text-2xl text-center tracking-[1em] focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-inner transition-all"
-                required
-              />
-            </div>
-            {pinError && <p className="text-red-500 text-xs font-medium text-center">{pinError}</p>}
-            <button 
-              type="submit"
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all mt-6 shadow-md shadow-blue-600/20"
-            >
-              <LogIn className="size-5" />
-              Access Admin
-            </button>
-          </form>
+          {!isPinVerified ? (
+            <>
+              <p className="text-slate-500 mb-8 text-sm">Please enter PIN code to access the control panel.</p>
+              <form onSubmit={handlePinSubmit} className="space-y-4 text-left">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center block">Enter 4-digit PIN</label>
+                  <input 
+                    type="password"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="••••"
+                    className="w-full bg-white/50 border border-slate-200/50 rounded-2xl py-4 px-4 text-2xl text-center tracking-[1em] focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-900 shadow-inner transition-all"
+                    required
+                  />
+                </div>
+                {pinError && <p className="text-red-500 text-xs font-medium text-center">{pinError}</p>}
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all mt-6 shadow-md shadow-blue-600/20"
+                >
+                  <LogIn className="size-5" />
+                  Verify PIN
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-500 mb-8 text-sm">Security requirement: Please sign in with Google to verify your admin identity.</p>
+              <button 
+                onClick={handleGoogleLogin}
+                className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <Globe className="size-5 text-blue-500" />
+                Sign in with Google
+              </button>
+            </>
+          )}
 
           <button 
             onClick={onBackClick}
@@ -512,6 +748,27 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
             
             <nav className="flex flex-col gap-2 relative">
               <NavItem icon={<Plus className="size-4" />} label="Create Timer" active />
+              
+              <div className="mt-4 px-4 py-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Session Name</p>
+                <div className="flex flex-col gap-2">
+                  <input 
+                    type="text" 
+                    value={currentSessionName}
+                    onChange={(e) => setCurrentSessionName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    placeholder="Tên ca thi..."
+                  />
+                  <button 
+                    onClick={handleSaveSessionName}
+                    disabled={isSavingSessionName || isSaving}
+                    className="w-full py-2.5 bg-blue-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-all disabled:opacity-50 shadow-md shadow-blue-500/20"
+                  >
+                    {isSavingSessionName ? 'Saving...' : 'Update Name'}
+                  </button>
+                </div>
+              </div>
+
               <div className="relative">
                 <button 
                   onClick={() => setShowSupport(!showSupport)}
@@ -550,7 +807,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                 <p className="text-sm font-semibold truncate text-slate-900">Administrator</p>
                 <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">PIN Access</p>
               </div>
-              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+              <button onClick={handleLogout} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
                 <LogOut className="size-4" />
               </button>
             </div>
@@ -564,7 +821,7 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
             <div className="flex items-center gap-4">
               <button 
                 onClick={onBackClick}
-                className="text-slate-500 hover:text-slate-800 transition-colors text-sm font-medium bg-white/50 px-4 py-2 rounded-full border border-slate-200/50 shadow-sm"
+                className="text-slate-600 hover:text-slate-900 transition-all text-sm font-bold bg-white/80 px-5 py-2.5 rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md"
               >
                 Back to Clock
               </button>
@@ -716,8 +973,8 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
 
               <button 
                 onClick={handleSave}
-                disabled={isSaving}
-                className="w-full py-4 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={isSaving || isSavingSessionName}
+                className="w-full py-4 bg-blue-500 text-white rounded-2xl text-sm font-bold hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSaving && <div className="size-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>}
                 {isSaving ? 'Saving...' : (editingTimerId ? 'Update Timer' : 'Save Timer')}
@@ -732,8 +989,8 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                     setRingtoneName('');
                     setRepeatCount('1');
                   }}
-                  disabled={isSaving}
-                  className="w-full mt-3 py-4 bg-slate-100 text-slate-700 rounded-2xl text-sm font-semibold hover:bg-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={isSaving || isSavingSessionName}
+                  className="w-full mt-3 py-4 bg-white/50 border border-slate-200 text-slate-600 rounded-2xl text-sm font-bold hover:bg-white/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                 >
                   Cancel Edit
                 </button>
@@ -773,13 +1030,15 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={confirmDelete}
-                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors border border-red-100"
+                            disabled={isSaving || isSavingSessionName}
+                            className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold hover:bg-red-600 transition-all shadow-md shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Confirm
                           </button>
                           <button 
                             onClick={() => setTimerToDelete(null)}
-                            className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors border border-slate-200"
+                            disabled={isSaving || isSavingSessionName}
+                            className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Cancel
                           </button>
@@ -788,14 +1047,16 @@ const AdminView = ({ onBackClick }: { onBackClick: () => void }) => {
                         <div className="flex items-center gap-1">
                           <button 
                             onClick={() => handleEdit(timer)}
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                            disabled={isSaving || isSavingSessionName}
+                            className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Edit Timer"
                           >
                             <Edit2 className="size-4" />
                           </button>
                           <button 
                             onClick={() => handleDelete(timer.id)}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            disabled={isSaving || isSavingSessionName}
+                            className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Delete Timer"
                           >
                             <Trash2 className="size-4" />
@@ -824,13 +1085,35 @@ const NavItem = ({ icon, label, active = false }: { icon: React.ReactNode, label
 );
 
 export default function App() {
-  const [view, setView] = useState<'clock' | 'admin'>('clock');
+  const [view, setView] = useState<'session_selection' | 'clock' | 'admin'>('session_selection');
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+
+  const handleSessionSelect = (session: string) => {
+    setSelectedSession(session);
+    setView('clock');
+  };
+
+  const handleBackToSessions = () => {
+    setSelectedSession(null);
+    setView('session_selection');
+  };
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen">
         <AnimatePresence mode="wait">
-          {view === 'clock' ? (
+          {view === 'session_selection' && (
+            <motion.div
+              key="selection"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SessionSelectionView onSelect={handleSessionSelect} />
+            </motion.div>
+          )}
+          {view === 'clock' && selectedSession && (
             <motion.div
               key="clock"
               initial={{ opacity: 0 }}
@@ -838,9 +1121,14 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <ClockView onAdminClick={() => setView('admin')} />
+              <ClockView 
+                selectedSession={selectedSession}
+                onAdminClick={() => setView('admin')} 
+                onBackClick={handleBackToSessions}
+              />
             </motion.div>
-          ) : (
+          )}
+          {view === 'admin' && selectedSession && (
             <motion.div
               key="admin"
               initial={{ opacity: 0, x: 20 }}
@@ -848,7 +1136,10 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <AdminView onBackClick={() => setView('clock')} />
+              <AdminView 
+                selectedSession={selectedSession}
+                onBackClick={() => setView('clock')} 
+              />
             </motion.div>
           )}
         </AnimatePresence>

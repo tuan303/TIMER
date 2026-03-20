@@ -35,6 +35,18 @@
     "users": {
       "schema": "User",
       "description": "Collection of user profiles."
+    },
+    "sessions": {
+      "schema": {
+        "title": "Session",
+        "description": "An exam session.",
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "The name of the session." }
+        },
+        "required": ["name"]
+      },
+      "description": "Collection of exam sessions."
     }
   }
 }

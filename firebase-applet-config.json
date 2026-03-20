@@ -1,9 +1,10 @@
 {
-  "apiKey": "AIzaSyAx3Gj6oa-tM4kCXmVgEpBTpI-LxfYZvCk",
-  "authDomain": "baogio-92f4f.firebaseapp.com",
-  "projectId": "baogio-92f4f",
-  "storageBucket": "baogio-92f4f.firebasestorage.app",
-  "messagingSenderId": "511348311356",
-  "appId": "1:511348311356:web:0c2876e7ec21f9fcf20a39",
-  "measurementId": "G-ZLLQ1QP5EW"
+  "projectId": "gen-lang-client-0539925303",
+  "appId": "1:710291063517:web:26bc35d945da69ef625134",
+  "apiKey": "AIzaSyCckj44YuRvRNwW0BAHKhjftNuzR4chSDw",
+  "authDomain": "gen-lang-client-0539925303.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-1ce303b2-fa64-4b6f-885c-2dc2cef3dde7",
+  "storageBucket": "gen-lang-client-0539925303.firebasestorage.app",
+  "messagingSenderId": "710291063517",
+  "measurementId": ""
 }
