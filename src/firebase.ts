@@ -4,14 +4,14 @@ import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, do
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
-  projectId: "gen-lang-client-0539925303",
-  appId: "1:710291063517:web:26bc35d945da69ef625134",
-  apiKey: "AIzaSyCckj44YuRvRNwW0BAHKhjftNuzR4chSDw",
-  authDomain: "gen-lang-client-0539925303.firebaseapp.com",
-  firestoreDatabaseId: "ai-studio-1ce303b2-fa64-4b6f-885c-2dc2cef3dde7",
-  storageBucket: "gen-lang-client-0539925303.firebasestorage.app",
-  messagingSenderId: "710291063517",
-  measurementId: ""
+  apiKey: "AIzaSyBb0Agfp4mbUU3Nqf7iJkoiYdjv1LubfMo",
+  authDomain: "chuong-9e8bb.firebaseapp.com",
+  projectId: "chuong-9e8bb",
+  storageBucket: "chuong-9e8bb.firebasestorage.app",
+  messagingSenderId: "1002907086206",
+  appId: "1:1002907086206:web:2d1a4d9d850203e273d72f",
+  measurementId: "G-WX6SFTG1ZY",
+  firestoreDatabaseId: "(default)"
 };
 
 const app = initializeApp(firebaseConfig);
